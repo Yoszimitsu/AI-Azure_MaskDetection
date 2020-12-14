@@ -18,6 +18,7 @@ import org.opencv.videoio.VideoCapture;
 
 import java.io.*;
 import java.net.URI;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -26,13 +27,14 @@ import static openCv.ImageProcessing.mat2Img;
 
 public class CustomVisionMaskDetectionTags {
 
+    private final double threshold = 0.5;
+    private ArrayList<JSONObject> maskDetectionJSONObjectArray = new ArrayList<>();
+    private Rect[] rectArray;
     private String url;
     private String key;
-    private final double threshold = 0.5;
-    private ArrayList<JSONObject> maskDetectionJSONObjectArray;
-    private Rect[] rectArray;
 
     public CustomVisionMaskDetectionTags() {
+        getCredentials();
     }
 
     public Image maskDetection(VideoCapture capture) throws IOException {
@@ -75,7 +77,7 @@ public class CustomVisionMaskDetectionTags {
                     httpEntities.add(entity);
                 }
             } catch (Exception e) {
-                System.out.println(e.getMessage());
+                e.printStackTrace();
             }
         }
         // PARSE JSON RESPONSES
@@ -85,10 +87,10 @@ public class CustomVisionMaskDetectionTags {
     }
 
     private void jsonParser(ArrayList<HttpEntity> httpEntitiesArray) throws IOException {
-        maskDetectionJSONObjectArray = new ArrayList<>();
+        maskDetectionJSONObjectArray.clear();
         for (HttpEntity entity : httpEntitiesArray) {
             JSONObject jsonObjectResponse = new JSONObject(EntityUtils.toString(entity));
-            if (jsonObjectResponse.get("predictions") != null) {
+            if (jsonObjectResponse.has("predictions")) {
                 JSONArray predictionsObjectArray = new JSONArray(jsonObjectResponse.get("predictions").toString());
                 for (int i = 0; i < predictionsObjectArray.length(); i++) {
                     maskDetectionJSONObjectArray.add(new JSONObject(predictionsObjectArray.get(i).toString()));
@@ -103,16 +105,22 @@ public class CustomVisionMaskDetectionTags {
     }
 
     private Mat rectangle(Rect[] rectArray, Mat image, ArrayList<JSONObject> maskDetectionJSONObjectArray) {
-        for (int i = 0; i < rectArray.length; i++) {
-            try {
-                Rect face = rectArray[i];
-                if (maskDetectionJSONObjectArray.get(i).getString("tagName").equals("mask"))
-                    Imgproc.rectangle(image, face.tl(), face.br(), new Scalar(0, 255, 0), 1);
-                if (maskDetectionJSONObjectArray.get(i).getString("tagName").equals("noMask"))
-                    Imgproc.rectangle(image, face.tl(), face.br(), new Scalar(0, 0, 255), 1);
-            }
-            catch (Exception e){
-                System.out.println(e.getMessage());
+        if (!maskDetectionJSONObjectArray.isEmpty()) {
+            for (int i = 0; i < rectArray.length; i++) {
+                String probability = new DecimalFormat("#.##").format(maskDetectionJSONObjectArray.get(i).getDouble("probability"));
+                try {
+                    Rect face = rectArray[i];
+                    if (maskDetectionJSONObjectArray.get(i).getString("tagName").equals("mask")) {
+                        Imgproc.rectangle(image, face.tl(), face.br(), new Scalar(0, 255, 0), 3);
+                        Imgproc.putText(image, "mask pr:" + probability , face.tl(), 1, 1, new Scalar(0, 255, 0), 1);
+                    }
+                    if (maskDetectionJSONObjectArray.get(i).getString("tagName").equals("noMask")) {
+                        Imgproc.rectangle(image, face.tl(), face.br(), new Scalar(0, 0, 255), 3);
+                        Imgproc.putText(image, "noMask pr:" + probability, face.tl(), 1, 1, new Scalar(0, 0, 255), 1);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
         return image;
@@ -120,17 +128,17 @@ public class CustomVisionMaskDetectionTags {
 
     private void getCredentials() {
         Properties prop = new Properties();
-        String fileName = "app.config";
+        String fileName = "./src/main/resources/app.config";
         InputStream is = null;
         try {
             is = new FileInputStream(fileName);
         } catch (FileNotFoundException ex) {
-            System.out.println(ex.getMessage());
+            ex.printStackTrace();
         }
         try {
             prop.load(is);
         } catch (IOException ex) {
-            System.out.println(ex.getMessage());
+            ex.printStackTrace();
         }
         this.url = prop.getProperty("url.customVisionTags");
         this.key = prop.getProperty("key.customVisionTags");
