@@ -63,7 +63,7 @@ public class ComputerVisionObjectDetection {
 
     private void getCredentials() {
         Properties prop = new Properties();
-        String fileName = "app.config";
+        String fileName = "./src/main/resources/app.config";
         InputStream is = null;
         try {
             is = new FileInputStream(fileName);
