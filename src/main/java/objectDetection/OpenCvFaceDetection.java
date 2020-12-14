@@ -1,8 +1,10 @@
 package objectDetection;
 
 import javafx.scene.image.Image;
-import org.opencv.core.*;
-import org.opencv.imgproc.Imgproc;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfRect;
+import org.opencv.core.Rect;
+import org.opencv.core.Size;
 import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.objdetect.Objdetect;
 import org.opencv.videoio.VideoCapture;
@@ -13,14 +15,13 @@ import static openCv.ImageProcessing.mat2Img;
 
 public class OpenCvFaceDetection {
 
+    private final String cascadeClassifierPath = "./src/main/resources/haarcascade_frontalface_default.xml";
+    private CascadeClassifier cascadeClassifier = new CascadeClassifier();
+    private MatOfRect facesDetected = new MatOfRect();
+    private ArrayList<Mat> faceImageArray = new ArrayList<>();
     private Mat image;
     private Mat imageWithTickedFaces;
-    private Image faceImage;
-    private CascadeClassifier cascadeClassifier = new CascadeClassifier();
-    private final String cascadeClassifierPath = "./src/main/resources/haarcascade_frontalface_default.xml";
-    private MatOfRect facesDetected = new MatOfRect();
     private Rect[] rectArray;
-    private ArrayList<Mat> faceImageArray = new ArrayList<>();
 
     public OpenCvFaceDetection(Mat image) {
         this.image = image;
@@ -64,7 +65,7 @@ public class OpenCvFaceDetection {
         );
         rectArray = this.facesDetected.toArray();
         for (Rect face : rectArray) {
-            Rect rect = new Rect(face.x, face.y, (int) (face.width * 1.1), (int) (face.height * 1.1));
+            Rect rect = new Rect(face.x, face.y, face.width, face.height);
             faceImageArray.add(image.submat(rect));
 //            Imgproc.rectangle(image, face.tl(), face.br(), new Scalar(0, 255, 255), 1);
         }
