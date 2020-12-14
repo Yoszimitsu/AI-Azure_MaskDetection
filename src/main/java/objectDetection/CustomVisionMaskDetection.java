@@ -10,6 +10,7 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
@@ -29,8 +30,8 @@ import static openCv.ImageProcessing.mat2Img;
 
 public class CustomVisionMaskDetection {
 
-    private ArrayList<JSONObject> maskDetectionJSONObjectArray;
     private final double threshold = 0.5;
+    private ArrayList<JSONObject> maskDetectionJSONObjectArray = new ArrayList<>();
     private String url;
     private String key;
 
@@ -70,59 +71,64 @@ public class CustomVisionMaskDetection {
                 this.jsonParser(EntityUtils.toString(entity));
             }
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
         return mat2Img(rectangle(mat));
     }
 
     public void jsonParser(String result) {
-        maskDetectionJSONObjectArray = new ArrayList<>();
         JSONObject jsonObjectResponse = new JSONObject(result);
-        if (jsonObjectResponse.get("predictions") != null) {
-            JSONArray predictionsObjectArray = new JSONArray(jsonObjectResponse.get("predictions").toString());
+        maskDetectionJSONObjectArray.clear();
+        try {
+            if (jsonObjectResponse.has("predictions")) {
+                JSONArray predictionsObjectArray = new JSONArray(jsonObjectResponse.get("predictions").toString());
 
-            for (int i = 0; i < predictionsObjectArray.length(); i++) {
-                maskDetectionJSONObjectArray.add(new JSONObject(predictionsObjectArray.get(i).toString()));
+                for (int i = 0; i < predictionsObjectArray.length(); i++) {
+                    maskDetectionJSONObjectArray.add(new JSONObject(predictionsObjectArray.get(i).toString()));
+                }
+                maskDetectionJSONObjectArray = (ArrayList<JSONObject>) maskDetectionJSONObjectArray
+                        .stream()
+                        .filter(jsonObject -> jsonObject.getDouble("probability") > threshold)
+                        .collect(Collectors.toList());
             }
-            maskDetectionJSONObjectArray = (ArrayList<JSONObject>) maskDetectionJSONObjectArray
-                    .stream()
-                    .filter(jsonObject -> jsonObject.getDouble("probability") > threshold)
-                    .collect(Collectors.toList());
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
     }
 
     private Mat rectangle(Mat image) {
-        int x, y, width, height;
+        if (!maskDetectionJSONObjectArray.isEmpty()) {
 
-        for (JSONObject jsonObject : maskDetectionJSONObjectArray) {
-            x = (int) (jsonObject.getJSONObject("boundingBox").getDouble("left") * image.width());
-            y = (int) (jsonObject.getJSONObject("boundingBox").getDouble("top") * image.height());
-            width = (int) (jsonObject.getJSONObject("boundingBox").getDouble("width") * image.width());
-            height = (int) (jsonObject.getJSONObject("boundingBox").getDouble("height") * image.height());
+            for (JSONObject jsonObject : maskDetectionJSONObjectArray) {
+                int x = (int) (jsonObject.getJSONObject("boundingBox").getDouble("left") * image.width());
+                int y = (int) (jsonObject.getJSONObject("boundingBox").getDouble("top") * image.height());
+                int width = (int) (jsonObject.getJSONObject("boundingBox").getDouble("width") * image.width());
+                int height = (int) (jsonObject.getJSONObject("boundingBox").getDouble("height") * image.height());
 
-            if (jsonObject.getString("tagName").equals("noMask"))
-                Imgproc.rectangle(image, new Point(x, y), new Point(x + width, y + height), new Scalar(0, 0, 255), 3);
-            if (jsonObject.getString("tagName").equals("mask"))
-                Imgproc.rectangle(image, new Point(x, y), new Point(x + width, y + height), new Scalar(0, 255, 0), 3);
+                if (jsonObject.getString("tagName").equals("noMask"))
+                    Imgproc.rectangle(image, new Point(x, y), new Point(x + width, y + height), new Scalar(0, 0, 255), 3);
+                if (jsonObject.getString("tagName").equals("mask"))
+                    Imgproc.rectangle(image, new Point(x, y), new Point(x + width, y + height), new Scalar(0, 255, 0), 3);
+            }
         }
         return image;
     }
 
     private void getCredentials() {
         Properties prop = new Properties();
-        String fileName = "app.config";
+        String fileName = "./src/main/resources/app.config";
         InputStream is = null;
         try {
             is = new FileInputStream(fileName);
         } catch (FileNotFoundException ex) {
-            System.out.println(ex.getMessage());
+            ex.printStackTrace();
         }
         try {
             prop.load(is);
         } catch (IOException ex) {
-            System.out.println(ex.getMessage());
+            ex.printStackTrace();
         }
-        this.url = prop.getProperty("app.url.customVision");
+        this.url = prop.getProperty("url.customVision");
         this.key = prop.getProperty("key.customVision");
     }
 }
