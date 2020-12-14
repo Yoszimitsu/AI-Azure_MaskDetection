@@ -1,3 +1,5 @@
+package apps;
+
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -5,11 +7,12 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import nu.pattern.OpenCV;
-import openCv.ImageLoader;
+import objectDetection.CustomVisionMaskDetection;
+import openCv.ImageProcessing;
 import org.opencv.core.Core;
 import org.opencv.videoio.VideoCapture;
 
-public class MainClass extends Application {
+public class VideoCaptureApp extends Application {
 
     private VideoCapture capture;
 
@@ -27,7 +30,7 @@ public class MainClass extends Application {
         new AnimationTimer() {
             @Override
             public void handle(long l) {
-                imageView.setImage(ImageLoader.getCapture(capture));
+                imageView.setImage(ImageProcessing.getCapture(capture));
             }
         }.start();
     }
