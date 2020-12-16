@@ -1,29 +1,61 @@
 package objectDetection;
 
 import javafx.scene.image.Image;
-import org.opencv.core.*;
-import org.opencv.imgproc.Imgproc;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfRect;
+import org.opencv.core.Rect;
+import org.opencv.core.Size;
 import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.objdetect.Objdetect;
 import org.opencv.videoio.VideoCapture;
+
+import java.util.ArrayList;
 
 import static openCv.ImageProcessing.mat2Img;
 
 public class OpenCvFaceDetection {
 
-    public static Image getCaptureWithFaceDetection(VideoCapture capture) {
+    private final String cascadeClassifierPath = "./src/main/resources/haarcascade_frontalface_default.xml";
+    private CascadeClassifier cascadeClassifier = new CascadeClassifier();
+    private MatOfRect facesDetected = new MatOfRect();
+    private ArrayList<Mat> faceImageArray = new ArrayList<>();
+    private Mat image;
+    private Mat imageWithTickedFaces;
+    private Rect[] rectArray;
+
+    public OpenCvFaceDetection(Mat image) {
+        this.image = image;
+        this.imageWithTickedFaces = image;
+        faceDetection(this.imageWithTickedFaces);
+    }
+
+    public Image getCaptureWithFaceDetection(VideoCapture capture) {
         Mat mat = new Mat();
         capture.read(mat);
-        Mat haarClassifiedImg = detectFace(mat);
+        Mat haarClassifiedImg = getImageWithTickedFaces();
         return mat2Img(haarClassifiedImg);
     }
 
-    public static Mat detectFace(Mat inputImage) {
-        MatOfRect facesDetected = new MatOfRect();
-        CascadeClassifier cascadeClassifier = new CascadeClassifier();
-        int minFaceSize = Math.round(inputImage.rows() * 0.1f);
-        cascadeClassifier.load("./src/main/resources/haarcascade_frontalface_default.xml");
-        cascadeClassifier.detectMultiScale(inputImage,
+    public Mat getImageWithTickedFaces() {
+        return imageWithTickedFaces;
+    }
+
+    public Mat getImage() {
+        return image;
+    }
+
+    public ArrayList<Mat> getFaceImageArray() {
+        return faceImageArray;
+    }
+
+    public Rect[] getRectArray() {
+        return rectArray;
+    }
+
+    private void faceDetection(Mat image) {
+        int minFaceSize = Math.round(image.rows() * 0.1f);
+        cascadeClassifier.load(cascadeClassifierPath);
+        cascadeClassifier.detectMultiScale(image,
                 facesDetected,
                 1.1,
                 3,
@@ -31,13 +63,11 @@ public class OpenCvFaceDetection {
                 new Size(minFaceSize, minFaceSize),
                 new Size()
         );
-        Rect[] facesArray = facesDetected.toArray();
-        for (Rect face : facesArray) {
-            Rect rect = new Rect(face.x, face.y, (int) (face.width * 1.1), (int) (face.height * 1.1));
-//            ImageProcessing.saveImage(inputImage.submat(rect), "./img.jpg");
-            Imgproc.rectangle(inputImage, face.tl(), face.br(), new Scalar(0, 255, 255), 1);
-
+        rectArray = this.facesDetected.toArray();
+        for (Rect face : rectArray) {
+            Rect rect = new Rect(face.x, face.y, face.width, face.height);
+            faceImageArray.add(image.submat(rect));
+//            Imgproc.rectangle(image, face.tl(), face.br(), new Scalar(0, 255, 255), 1);
         }
-        return inputImage;
     }
 }
