@@ -67,7 +67,6 @@ public class OpenCvFaceDetection {
         for (Rect face : rectArray) {
             Rect rect = new Rect(face.x, face.y, face.width, face.height);
             faceImageArray.add(image.submat(rect));
-//            Imgproc.rectangle(image, face.tl(), face.br(), new Scalar(0, 255, 255), 1);
         }
     }
 }
