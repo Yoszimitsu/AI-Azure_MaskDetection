@@ -7,7 +7,6 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import nu.pattern.OpenCV;
-import objectDetection.CustomVisionMaskDetection;
 import objectDetection.CustomVisionMaskDetectionTags;
 import org.opencv.core.Core;
 import org.opencv.videoio.VideoCapture;
