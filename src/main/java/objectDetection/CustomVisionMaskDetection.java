@@ -22,6 +22,7 @@ import org.opencv.videoio.VideoCapture;
 
 import java.io.*;
 import java.net.URI;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -105,10 +106,16 @@ public class CustomVisionMaskDetection {
                 int width = (int) (jsonObject.getJSONObject("boundingBox").getDouble("width") * image.width());
                 int height = (int) (jsonObject.getJSONObject("boundingBox").getDouble("height") * image.height());
 
-                if (jsonObject.getString("tagName").equals("noMask"))
+                String probability = new DecimalFormat("#.##").format(jsonObject.getDouble("probability"));
+
+                if (jsonObject.getString("tagName").equals("noMask")) {
                     Imgproc.rectangle(image, new Point(x, y), new Point(x + width, y + height), new Scalar(0, 0, 255), 3);
-                if (jsonObject.getString("tagName").equals("mask"))
+                    Imgproc.putText(image, "noMask pr:" + probability, new Point(x, y), 1, 1, new Scalar(0, 0, 255), 1);
+                }
+                if (jsonObject.getString("tagName").equals("mask")) {
                     Imgproc.rectangle(image, new Point(x, y), new Point(x + width, y + height), new Scalar(0, 255, 0), 3);
+                    Imgproc.putText(image, "mask pr:" + probability, new Point(x, y), 1, 1, new Scalar(0, 255, 0), 1);
+                }
             }
         }
         return image;
