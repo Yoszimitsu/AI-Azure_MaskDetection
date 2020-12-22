@@ -12,7 +12,7 @@ The project realizes a covid mask detection from real time camera.
 - OpenCV library
 
 ### Creation process
-To access to netbook camera and update the image used OpenCv library.
+To netbook camera access and update the image used OpenCv library.
 
 ![](src/main/resources/images/ImageProccessing.png)
 
@@ -24,7 +24,7 @@ Mask detection is realized in two Custom Vision models.
 Custom Vision service provides 2 types of model: Object Detection and Classification. Object Detection engine allows search for a pre-defined object in the image. 
 Classification allows to define the image type using predefined tags. 
 
-Depending on the Custom Vision model type, image sending to the service is different. You find explanation in next chapters. 
+Depending on the Custom Vision model type, an image sending to the service is different. You find explanation in next chapters. 
 
 #### Classification
 
@@ -32,7 +32,7 @@ The first step is creation tags and added images to teach algorithm how match th
 
 ![](src/main/resources/images/customVisionMask.png)
 
-For "noMask" tag defined pictures of people without masks.
+For "noMask" tag defines pictures of people without masks.
 
 ![](src/main/resources/images/customVisionNoMask.png)
 
@@ -62,7 +62,6 @@ According to response tags, the object is defined as "mask" or "noMask" and mark
 To recap, in classification type version, face detection is realized by OpenCV library and Custom Vision is only used to mark that face is with or without mask.
 Unfortunately FaceAPI Azure service has problem with recognizing faces with a mask, so I chose the OpenCv Library which has less hassle.
 The troubles start when we have more that one face in camera snapshot. Then each face image must be sent to Custom Vision as separate HTTP request. Unfortunately, this causes high delays.
- 
 
 #### Object Detection
 
@@ -81,9 +80,8 @@ Rectangle method provides draw rectangle around a face based on location points 
 
 ![](src/main/resources/images/rectangle.png)
 
-To recap, in Object Detection model type the image from camera snapshot is sent in all and Custom Vision algorithm is responsible for detection object as face with or without mask.
-If in the image we can see more than faces, still only one HTTP request is send to the service and in response we get a few detected object. So, it's more optimal in comparison to Classification model type
-where each face object is sent singly.
+To recap, in Object Detection model type the entire image from camera snapshot is processed and Custom Vision algorithm is responsible for detection object as face with or without a mask.
+If in the image we can see more than faces, still only one HTTP request is send to the service and in response we get a few detected object. So, it's more optimal in comparison to Classification model type where each face object is sent singly.
 
 
 
