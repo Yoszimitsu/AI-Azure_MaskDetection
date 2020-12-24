@@ -1,5 +1,6 @@
 package objectDetection;
 
+import error.CredentialsNotFoundError;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -11,7 +12,9 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.Properties;
 
@@ -25,11 +28,11 @@ public class ComputerVisionObjectDetection {
     private HttpResponse response;
     private StringEntity reqEntity;
 
-    public ComputerVisionObjectDetection() {
+    public ComputerVisionObjectDetection() throws CredentialsNotFoundError {
         getCredentials();
     }
 
-    public void sendRequest(ByteArrayInputStream inputStream) {
+    public void execute(ByteArrayInputStream inputStream) {
         try {
             builder = new URIBuilder(url);
             uri = builder.build();
@@ -45,37 +48,28 @@ public class ComputerVisionObjectDetection {
 
             response = httpclient.execute(request);
 
-            HttpEntity entity = response.getEntity();
-            String result = "";
-            if (entity != null) {
+            if (response.getEntity() != null) {
                 // CONVERT RESPONSE TO STRING
-                result = EntityUtils.toString(entity);
-                result = "[" + result + "]";
-                System.out.println(result);
+                String result = "[" + EntityUtils.toString(response.getEntity()) + "]";
+                // CONVERT RESPONSE STRING TO JSON ARRAY
+                JSONArray ja = new JSONArray(result);
             }
 
-            // CONVERT RESPONSE STRING TO JSON ARRAY
-            JSONArray ja = new JSONArray(result);
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            e.getStackTrace();
         }
     }
 
-    private void getCredentials() {
+    private void getCredentials() throws CredentialsNotFoundError {
         Properties prop = new Properties();
-        String fileName = "./src/main/resources/app.config";
-        InputStream is = null;
+        String fileName = "./src/main/java/credentials/app.config";
         try {
-            is = new FileInputStream(fileName);
-        } catch (FileNotFoundException ex) {
-            System.out.println(ex.getMessage());
-        }
-        try {
+            InputStream is = new FileInputStream(fileName);
             prop.load(is);
-        } catch (IOException ex) {
-            System.out.println(ex.getMessage());
+            this.url = prop.getProperty("url.computerVision");
+            this.key = prop.getProperty("key.computerVision");
+        } catch (Exception e) {
+            throw new CredentialsNotFoundError();
         }
-        this.url = prop.getProperty("url.computerVision");
-        this.key = prop.getProperty("key.computerVision");
     }
 }

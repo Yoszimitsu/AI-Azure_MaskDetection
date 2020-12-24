@@ -1,16 +1,9 @@
 package objectDetection;
 
+import dto.MaskDetectionRequestObject;
+import error.CredentialsNotFoundError;
 import javafx.scene.image.Image;
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
-import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
@@ -20,13 +13,15 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 
-import java.io.*;
-import java.net.URI;
+import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 import static openCv.ImageProcessing.mat2Img;
+import static services.CustomVisionService.jsonParser;
+import static services.CustomVisionService.sendRequest;
 
 public class CustomVisionMaskDetection {
 
@@ -35,70 +30,36 @@ public class CustomVisionMaskDetection {
     private String url;
     private String key;
 
-    public CustomVisionMaskDetection() {
+    public CustomVisionMaskDetection() throws CredentialsNotFoundError {
         getCredentials();
     }
 
     public Image maskDetection(VideoCapture capture) {
-        HttpClient httpclient = HttpClients.createDefault();
-        Mat mat = new Mat();
-        capture.read(mat);
-
+        MaskDetectionRequestObject maskDetectionRequestObject = new MaskDetectionRequestObject();
+        capture.read(maskDetectionRequestObject.getMat());
         try {
             MatOfByte bytes = new MatOfByte();
-            Imgcodecs.imencode(".jpg", mat, bytes);
+            Imgcodecs.imencode(".jpg", maskDetectionRequestObject.getMat(), bytes);
             ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes.toArray());
 
-            URIBuilder builder = new URIBuilder(url);
-            URI uri = builder.build();
-            HttpPost request = new HttpPost(uri);
-            request.setHeader("Prediction-Key", key);
-            request.setHeader("Content-Type", "application/octet-stream");
+            // SEND HTTP REQUEST
+            HttpResponse response = sendRequest(maskDetectionRequestObject, inputStream, url, key);
 
-            // Request body
-            byte[] data = inputStream.readAllBytes();
-            HttpEntity requestEntity = new ByteArrayEntity(data);
-
-            request.setEntity(requestEntity);
-
-            // Send HTTP request
-            HttpResponse response = httpclient.execute(request);
-            HttpEntity entity = response.getEntity();
-
-            if (entity != null) {
-                // CONVERT RESPONSE TO STRING
-                // CONVERT RESPONSE STRING TO JSON ARRAY
-                this.jsonParser(EntityUtils.toString(entity));
+            // CONVERT RESPONSE TO STRING AND CONVERT RESPONSE STRING TO JSON ARRAY
+            if (response.getEntity() != null) {
+                maskDetectionRequestObject.getHttpEntities().add(response.getEntity());
             }
+
+            maskDetectionJSONObjectArray = jsonParser(maskDetectionRequestObject.getHttpEntities(), maskDetectionJSONObjectArray, threshold);
+
         } catch (Exception e) {
-            e.printStackTrace();
+            e.getStackTrace();
         }
-        return mat2Img(rectangle(mat));
-    }
-
-    public void jsonParser(String result) {
-        JSONObject jsonObjectResponse = new JSONObject(result);
-        maskDetectionJSONObjectArray.clear();
-        try {
-            if (jsonObjectResponse.has("predictions")) {
-                JSONArray predictionsObjectArray = new JSONArray(jsonObjectResponse.get("predictions").toString());
-
-                for (int i = 0; i < predictionsObjectArray.length(); i++) {
-                    maskDetectionJSONObjectArray.add(new JSONObject(predictionsObjectArray.get(i).toString()));
-                }
-                maskDetectionJSONObjectArray = (ArrayList<JSONObject>) maskDetectionJSONObjectArray
-                        .stream()
-                        .filter(jsonObject -> jsonObject.getDouble("probability") > threshold)
-                        .collect(Collectors.toList());
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+        return mat2Img(rectangle(maskDetectionRequestObject.getMat()));
     }
 
     private Mat rectangle(Mat image) {
         if (!maskDetectionJSONObjectArray.isEmpty()) {
-
             for (JSONObject jsonObject : maskDetectionJSONObjectArray) {
                 int x = (int) (jsonObject.getJSONObject("boundingBox").getDouble("left") * image.width());
                 int y = (int) (jsonObject.getJSONObject("boundingBox").getDouble("top") * image.height());
@@ -114,21 +75,16 @@ public class CustomVisionMaskDetection {
         return image;
     }
 
-    private void getCredentials() {
+    private void getCredentials() throws CredentialsNotFoundError {
         Properties prop = new Properties();
-        String fileName = "./src/main/resources/app.config";
-        InputStream is = null;
+        String fileName = "./src/main/java/credentials/app.config";
         try {
-            is = new FileInputStream(fileName);
-        } catch (FileNotFoundException ex) {
-            ex.printStackTrace();
-        }
-        try {
+            InputStream is = new FileInputStream(fileName);
             prop.load(is);
-        } catch (IOException ex) {
-            ex.printStackTrace();
+            this.url = prop.getProperty("url.customVision");
+            this.key = prop.getProperty("key.customVision");
+        } catch (Exception e) {
+            throw new CredentialsNotFoundError();
         }
-        this.url = prop.getProperty("url.customVision");
-        this.key = prop.getProperty("key.customVision");
     }
 }
