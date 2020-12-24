@@ -15,7 +15,7 @@ import static openCv.ImageProcessing.mat2Img;
 
 public class OpenCvFaceDetection {
 
-    private final String cascadeClassifierPath = "./src/main/resources/haarcascade_frontalface_default.xml";
+    private String cascadeClassifierPath = "./src/main/java/models/haarcascade_frontalface_default.xml";
     private CascadeClassifier cascadeClassifier = new CascadeClassifier();
     private MatOfRect facesDetected = new MatOfRect();
     private ArrayList<Mat> faceImageArray = new ArrayList<>();
