@@ -1,5 +1,7 @@
 package objectDetection;
 
+import dto.AzurePassDto;
+import error.CredentialsFileNotFound;
 import error.CredentialsNotFoundError;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -13,32 +15,30 @@ import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.net.URI;
-import java.util.Properties;
+
+import static services.CustomVisionService.getCredentials;
 
 public class ComputerVisionObjectDetection {
 
-    HttpClient httpclient = HttpClients.createDefault();
-    private String url;
-    private String key;
+    private HttpClient httpclient = HttpClients.createDefault();
+    private AzurePassDto azurePass;
     private URIBuilder builder;
     private URI uri;
     private HttpResponse response;
     private StringEntity reqEntity;
 
-    public ComputerVisionObjectDetection() throws CredentialsNotFoundError {
-        getCredentials();
+    public ComputerVisionObjectDetection() throws CredentialsNotFoundError, CredentialsFileNotFound {
+        this.azurePass = getCredentials("./src/main/java/credentials/app.config", "url.computerVision", "key.computerVision");
     }
 
     public void execute(ByteArrayInputStream inputStream) {
         try {
-            builder = new URIBuilder(url);
+            builder = new URIBuilder(this.azurePass.getUrl());
             uri = builder.build();
             HttpPost request = new HttpPost(uri);
             request.setHeader("Content-Type", "application/octet-stream");
-            request.setHeader("Ocp-Apim-Subscription-Key", key);
+            request.setHeader("Ocp-Apim-Subscription-Key", this.azurePass.getKey());
 
             // Request body
             byte[] data = inputStream.readAllBytes();
@@ -57,19 +57,6 @@ public class ComputerVisionObjectDetection {
 
         } catch (Exception e) {
             e.getStackTrace();
-        }
-    }
-
-    private void getCredentials() throws CredentialsNotFoundError {
-        Properties prop = new Properties();
-        String fileName = "./src/main/java/credentials/app.config";
-        try {
-            InputStream is = new FileInputStream(fileName);
-            prop.load(is);
-            this.url = prop.getProperty("url.computerVision");
-            this.key = prop.getProperty("key.computerVision");
-        } catch (Exception e) {
-            throw new CredentialsNotFoundError();
         }
     }
 }

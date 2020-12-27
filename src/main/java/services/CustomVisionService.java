@@ -1,6 +1,10 @@
 package services;
 
-import dto.MaskDetectionRequestObject;
+import dto.AzurePassDto;
+import dto.MaskDetectionRequestDto;
+import error.CredentialsFileNotFound;
+import error.CredentialsNotFoundError;
+import error.JsonResponseParserError;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -10,16 +14,16 @@ import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 public class CustomVisionService {
 
-    public static HttpResponse sendRequest(MaskDetectionRequestObject maskDetectionRequestObject, ByteArrayInputStream inputStream, String url, String key) {
+    public static HttpResponse sendRequest(MaskDetectionRequestDto maskDetectionRequestDto, ByteArrayInputStream inputStream, String url, String key) {
         HttpResponse response = null;
         try {
             URIBuilder builder = new URIBuilder(url);
@@ -34,7 +38,7 @@ public class CustomVisionService {
             request.setEntity(requestEntity);
 
             // Send HTTP request
-            response = maskDetectionRequestObject.getHttpclient().execute(request);
+            response = maskDetectionRequestDto.getHttpclient().execute(request);
 
         } catch (IOException | URISyntaxException e) {
             e.printStackTrace();
@@ -42,22 +46,50 @@ public class CustomVisionService {
         return response;
     }
 
-    public static ArrayList<JSONObject> jsonParser(ArrayList<HttpEntity> httpEntitiesArray, ArrayList<JSONObject> maskDetectionJSONObjectArray, double threshold) throws IOException {
+    public static ArrayList<JSONObject> entityParser(ArrayList<HttpEntity> httpEntitiesArray, ArrayList<JSONObject> maskDetectionJSONObjectArray, double threshold) throws IOException, JsonResponseParserError {
         maskDetectionJSONObjectArray.clear();
         for (HttpEntity entity : httpEntitiesArray) {
             JSONObject jsonObjectResponse = new JSONObject(EntityUtils.toString(entity));
-            if (jsonObjectResponse.has("predictions")) {
-                JSONArray predictionsObjectArray = new JSONArray(jsonObjectResponse.get("predictions").toString());
-                for (int i = 0; i < predictionsObjectArray.length(); i++) {
-                    maskDetectionJSONObjectArray.add(new JSONObject(predictionsObjectArray.get(i).toString()));
-                }
-                // FILTER PROBABILITY > THRESHOLD
-                maskDetectionJSONObjectArray = (ArrayList<JSONObject>) maskDetectionJSONObjectArray
-                        .stream()
-                        .filter(jsonObject -> jsonObject.getDouble("probability") > threshold)
-                        .collect(Collectors.toList());
-            }
+            maskDetectionJSONObjectArray = jsonParser(jsonObjectResponse, maskDetectionJSONObjectArray, threshold);
         }
         return maskDetectionJSONObjectArray;
     }
+
+    public static ArrayList<JSONObject> jsonParser(JSONObject jsonResponse, ArrayList<JSONObject> maskDetectionJSONObjectArray, double threshold) throws JsonResponseParserError {
+        try {
+            JSONArray predictionsObjectArray = new JSONArray(jsonResponse.get("predictions").toString());
+            for (int i = 0; i < predictionsObjectArray.length(); i++) {
+                maskDetectionJSONObjectArray.add(new JSONObject(predictionsObjectArray.get(i).toString()));
+            }
+            // FILTER PROBABILITY > THRESHOLD
+            maskDetectionJSONObjectArray = (ArrayList<JSONObject>) maskDetectionJSONObjectArray
+                    .stream()
+                    .filter(jsonObject -> jsonObject.getDouble("probability") > threshold)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new JsonResponseParserError("Error during parsing JSON response.");
+        }
+        return maskDetectionJSONObjectArray;
+    }
+
+    public static AzurePassDto getCredentials(String filePath, String urlVariable, String keyVariable) throws CredentialsNotFoundError, CredentialsFileNotFound {
+        AzurePassDto azurePassDto = new AzurePassDto();
+        Properties prop = new Properties();
+        try {
+            InputStream is = new FileInputStream(filePath);
+            prop.load(is);
+            azurePassDto.setUrl(prop.getProperty(urlVariable));
+            azurePassDto.setKey(prop.getProperty(keyVariable));
+        } catch (FileNotFoundException e) {
+            throw new CredentialsFileNotFound("Config file with credentials not found. Check the file path.");
+        } catch (Exception e) {
+            e.getStackTrace();
+        }
+
+        if (azurePassDto.getKey() == null || azurePassDto.getUrl() == null) {
+            throw new CredentialsNotFoundError("Credentials not found. Check variable names.");
+        }
+        return azurePassDto;
+    }
+
 }
