@@ -51,7 +51,7 @@ public class CustomVisionMaskDetection {
                 maskDetectionRequestDto.getHttpEntities().add(response.getEntity());
             }
 
-            maskDetectionJSONObjectArray = jsonParser(
+            maskDetectionJSONObjectArray = entityParser(
                     maskDetectionRequestDto.getHttpEntities(), maskDetectionJSONObjectArray, threshold);
 
         } catch (Exception e) {

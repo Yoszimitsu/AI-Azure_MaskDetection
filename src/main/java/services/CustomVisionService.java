@@ -4,6 +4,7 @@ import dto.AzurePassDto;
 import dto.MaskDetectionRequestDto;
 import error.CredentialsFileNotFound;
 import error.CredentialsNotFoundError;
+import error.JsonResponseParserError;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -45,12 +46,19 @@ public class CustomVisionService {
         return response;
     }
 
-    public static ArrayList<JSONObject> jsonParser(ArrayList<HttpEntity> httpEntitiesArray, ArrayList<JSONObject> maskDetectionJSONObjectArray, double threshold) throws IOException {
+    public static ArrayList<JSONObject> entityParser(ArrayList<HttpEntity> httpEntitiesArray, ArrayList<JSONObject> maskDetectionJSONObjectArray, double threshold) throws IOException, JsonResponseParserError {
         maskDetectionJSONObjectArray.clear();
         for (HttpEntity entity : httpEntitiesArray) {
             JSONObject jsonObjectResponse = new JSONObject(EntityUtils.toString(entity));
-            if (jsonObjectResponse.has("predictions")) {
-                JSONArray predictionsObjectArray = new JSONArray(jsonObjectResponse.get("predictions").toString());
+            maskDetectionJSONObjectArray = jsonParser(jsonObjectResponse, maskDetectionJSONObjectArray, threshold);
+        }
+        return maskDetectionJSONObjectArray;
+    }
+
+    public static ArrayList<JSONObject> jsonParser(JSONObject jsonResponse, ArrayList<JSONObject> maskDetectionJSONObjectArray, double threshold) throws JsonResponseParserError {
+        if (jsonResponse.has("predictions")) {
+            try {
+                JSONArray predictionsObjectArray = new JSONArray(jsonResponse.get("predictions").toString());
                 for (int i = 0; i < predictionsObjectArray.length(); i++) {
                     maskDetectionJSONObjectArray.add(new JSONObject(predictionsObjectArray.get(i).toString()));
                 }
@@ -59,6 +67,8 @@ public class CustomVisionService {
                         .stream()
                         .filter(jsonObject -> jsonObject.getDouble("probability") > threshold)
                         .collect(Collectors.toList());
+            } catch (Exception e) {
+                throw new JsonResponseParserError("Error during parsing JSON response.");
             }
         }
         return maskDetectionJSONObjectArray;
