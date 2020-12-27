@@ -93,6 +93,7 @@ public class CustomVisionServiceTest {
         Assert.assertEquals("Error during parsing JSON response.", exception.getMessage());
     }
 
+    //Before test execution, be sure that in test.config file are correct Azure url and key (url.customVision, key.customVision)
     @Test
     public void sendRequestShouldReturn200StatusCode() throws CredentialsNotFoundError, CredentialsFileNotFound {
         MaskDetectionRequestDto maskDetectionRequestDto = new MaskDetectionRequestDto();
