@@ -2,6 +2,7 @@ package services;
 
 import dto.AzurePassDto;
 import dto.MaskDetectionRequestDto;
+import error.CredentialsFileNotFound;
 import error.CredentialsNotFoundError;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -12,10 +13,7 @@ import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -66,17 +64,22 @@ public class CustomVisionService {
         return maskDetectionJSONObjectArray;
     }
 
-    public static AzurePassDto getCredentials(String urlVariable, String keyVariable) throws CredentialsNotFoundError {
+    public static AzurePassDto getCredentials(String filePath, String urlVariable, String keyVariable) throws CredentialsNotFoundError, CredentialsFileNotFound {
         AzurePassDto azurePassDto = new AzurePassDto();
         Properties prop = new Properties();
-        String fileName = "./src/main/java/credentials/app.config";
         try {
-            InputStream is = new FileInputStream(fileName);
+            InputStream is = new FileInputStream(filePath);
             prop.load(is);
             azurePassDto.setUrl(prop.getProperty(urlVariable));
             azurePassDto.setKey(prop.getProperty(keyVariable));
+        } catch (FileNotFoundException e) {
+            throw new CredentialsFileNotFound("Config file with credentials not found. Check the file path.");
         } catch (Exception e) {
-            throw new CredentialsNotFoundError();
+            e.getStackTrace();
+        }
+
+        if (azurePassDto.getKey() == null || azurePassDto.getUrl() == null) {
+            throw new CredentialsNotFoundError("Credentials not found. Check variable names.");
         }
         return azurePassDto;
     }

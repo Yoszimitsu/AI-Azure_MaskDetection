@@ -2,6 +2,7 @@ package objectDetection;
 
 import dto.AzurePassDto;
 import dto.MaskDetectionRequestDto;
+import error.CredentialsFileNotFound;
 import error.CredentialsNotFoundError;
 import javafx.scene.image.Image;
 import org.apache.http.HttpResponse;
@@ -26,8 +27,8 @@ public class CustomVisionMaskDetection {
     private ArrayList<JSONObject> maskDetectionJSONObjectArray = new ArrayList<>();
     private AzurePassDto azurePass;
 
-    public CustomVisionMaskDetection() throws CredentialsNotFoundError {
-        this.azurePass = getCredentials("url.customVision", "key.customVision");
+    public CustomVisionMaskDetection() throws CredentialsNotFoundError, CredentialsFileNotFound {
+        this.azurePass = getCredentials("./src/main/java/credentials/app.config", "url.customVision", "key.customVision");
     }
 
     public Image maskDetection(VideoCapture capture) {

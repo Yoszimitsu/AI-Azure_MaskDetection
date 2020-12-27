@@ -1,6 +1,7 @@
 package objectDetection;
 
 import dto.AzurePassDto;
+import error.CredentialsFileNotFound;
 import error.CredentialsNotFoundError;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -27,8 +28,8 @@ public class ComputerVisionObjectDetection {
     private HttpResponse response;
     private StringEntity reqEntity;
 
-    public ComputerVisionObjectDetection() throws CredentialsNotFoundError {
-        this.azurePass = getCredentials("url.computerVision", "key.computerVision");
+    public ComputerVisionObjectDetection() throws CredentialsNotFoundError, CredentialsFileNotFound {
+        this.azurePass = getCredentials("./src/main/java/credentials/app.config", "url.computerVision", "key.computerVision");
     }
 
     public void execute(ByteArrayInputStream inputStream) {
