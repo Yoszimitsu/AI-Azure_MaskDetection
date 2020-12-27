@@ -56,20 +56,18 @@ public class CustomVisionService {
     }
 
     public static ArrayList<JSONObject> jsonParser(JSONObject jsonResponse, ArrayList<JSONObject> maskDetectionJSONObjectArray, double threshold) throws JsonResponseParserError {
-        if (jsonResponse.has("predictions")) {
-            try {
-                JSONArray predictionsObjectArray = new JSONArray(jsonResponse.get("predictions").toString());
-                for (int i = 0; i < predictionsObjectArray.length(); i++) {
-                    maskDetectionJSONObjectArray.add(new JSONObject(predictionsObjectArray.get(i).toString()));
-                }
-                // FILTER PROBABILITY > THRESHOLD
-                maskDetectionJSONObjectArray = (ArrayList<JSONObject>) maskDetectionJSONObjectArray
-                        .stream()
-                        .filter(jsonObject -> jsonObject.getDouble("probability") > threshold)
-                        .collect(Collectors.toList());
-            } catch (Exception e) {
-                throw new JsonResponseParserError("Error during parsing JSON response.");
+        try {
+            JSONArray predictionsObjectArray = new JSONArray(jsonResponse.get("predictions").toString());
+            for (int i = 0; i < predictionsObjectArray.length(); i++) {
+                maskDetectionJSONObjectArray.add(new JSONObject(predictionsObjectArray.get(i).toString()));
             }
+            // FILTER PROBABILITY > THRESHOLD
+            maskDetectionJSONObjectArray = (ArrayList<JSONObject>) maskDetectionJSONObjectArray
+                    .stream()
+                    .filter(jsonObject -> jsonObject.getDouble("probability") > threshold)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new JsonResponseParserError("Error during parsing JSON response.");
         }
         return maskDetectionJSONObjectArray;
     }
