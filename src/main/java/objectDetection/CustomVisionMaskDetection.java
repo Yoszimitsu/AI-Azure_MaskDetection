@@ -1,6 +1,7 @@
 package objectDetection;
 
-import dto.MaskDetectionRequestObject;
+import dto.AzurePassDto;
+import dto.MaskDetectionRequestDto;
 import error.CredentialsNotFoundError;
 import javafx.scene.image.Image;
 import org.apache.http.HttpResponse;
@@ -14,48 +15,48 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Properties;
 
 import static openCv.ImageProcessing.mat2Img;
-import static services.CustomVisionService.jsonParser;
-import static services.CustomVisionService.sendRequest;
+import static services.CustomVisionService.*;
 
 public class CustomVisionMaskDetection {
 
     private final double threshold = 0.5;
     private ArrayList<JSONObject> maskDetectionJSONObjectArray = new ArrayList<>();
-    private String url;
-    private String key;
+    private AzurePassDto azurePass;
 
     public CustomVisionMaskDetection() throws CredentialsNotFoundError {
-        getCredentials();
+        this.azurePass = getCredentials("url.customVision", "key.customVision");
     }
 
     public Image maskDetection(VideoCapture capture) {
-        MaskDetectionRequestObject maskDetectionRequestObject = new MaskDetectionRequestObject();
-        capture.read(maskDetectionRequestObject.getMat());
+        MaskDetectionRequestDto maskDetectionRequestDto = new MaskDetectionRequestDto();
+        capture.read(maskDetectionRequestDto.getMat());
         try {
             MatOfByte bytes = new MatOfByte();
-            Imgcodecs.imencode(".jpg", maskDetectionRequestObject.getMat(), bytes);
+            Imgcodecs.imencode(".jpg", maskDetectionRequestDto.getMat(), bytes);
             ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes.toArray());
 
             // SEND HTTP REQUEST
-            HttpResponse response = sendRequest(maskDetectionRequestObject, inputStream, url, key);
+            HttpResponse response = sendRequest(
+                    maskDetectionRequestDto,
+                    inputStream,
+                    this.azurePass.getUrl(),
+                    this.azurePass.getKey());
 
             // CONVERT RESPONSE TO STRING AND CONVERT RESPONSE STRING TO JSON ARRAY
             if (response.getEntity() != null) {
-                maskDetectionRequestObject.getHttpEntities().add(response.getEntity());
+                maskDetectionRequestDto.getHttpEntities().add(response.getEntity());
             }
 
-            maskDetectionJSONObjectArray = jsonParser(maskDetectionRequestObject.getHttpEntities(), maskDetectionJSONObjectArray, threshold);
+            maskDetectionJSONObjectArray = jsonParser(
+                    maskDetectionRequestDto.getHttpEntities(), maskDetectionJSONObjectArray, threshold);
 
         } catch (Exception e) {
             e.getStackTrace();
         }
-        return mat2Img(rectangle(maskDetectionRequestObject.getMat()));
+        return mat2Img(rectangle(maskDetectionRequestDto.getMat()));
     }
 
     private Mat rectangle(Mat image) {
@@ -73,18 +74,5 @@ public class CustomVisionMaskDetection {
             }
         }
         return image;
-    }
-
-    private void getCredentials() throws CredentialsNotFoundError {
-        Properties prop = new Properties();
-        String fileName = "./src/main/java/credentials/app.config";
-        try {
-            InputStream is = new FileInputStream(fileName);
-            prop.load(is);
-            this.url = prop.getProperty("url.customVision");
-            this.key = prop.getProperty("key.customVision");
-        } catch (Exception e) {
-            throw new CredentialsNotFoundError();
-        }
     }
 }

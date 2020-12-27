@@ -8,7 +8,7 @@ import org.opencv.core.MatOfRect;
 
 import java.util.ArrayList;
 
-public class MaskDetectionRequestObject {
+public class MaskDetectionRequestDto {
 
     private HttpClient httpclient;
     private Mat mat;
@@ -16,7 +16,7 @@ public class MaskDetectionRequestObject {
     private ArrayList<HttpEntity> httpEntities;
 
 
-    public MaskDetectionRequestObject() {
+    public MaskDetectionRequestDto() {
         this.httpclient = HttpClients.createDefault();
         this.mat = new Mat();
         this.facesDetected = new MatOfRect();
