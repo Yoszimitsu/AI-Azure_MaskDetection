@@ -14,7 +14,7 @@ The project realizes a covid mask detection from real time camera.
 ### Creation process
 To netbook camera access and update the image used OpenCv library.
 
-![](src/main/resources/images/ImageProccessing.png)
+![](images/ImageProccessing.png)
 
 It's possible to get a camera snapshot or to get camera images in real time. In the project I prepared a mask detection in real time. 
 
@@ -30,15 +30,15 @@ Depending on the Custom Vision model type, an image sending to the service is di
 
 The first step is creation tags and added images to teach algorithm how match the image to proper group. To "mask" tag added pictures which presents people with masks.
 
-![](src/main/resources/images/customVisionMask.png)
+![](images/customVisionMask.png)
 
 For "noMask" tag defines pictures of people without masks.
 
-![](src/main/resources/images/customVisionNoMask.png)
+![](images/customVisionNoMask.png)
 
 After model training CustomVision service is ready to use. CustomVision model must be published to get the URL and secret key that enables the trained model to be used.
  
-![](src/main/resources/images/customVisionIteration.png)
+![](customVisionIteration.png)
 
 **Precision** - This number will tell you: if a tag is predicted by your model, how likely is that to be right?
 
@@ -55,7 +55,7 @@ The application using OpenCv library detect and cut a face area from camera snap
 The response is filtering out from all tags with a probability below the threshold (0.5).
 We can define a threshold according to the needs.
 
-![](src/main/resources/images/CustomVisionMaskDetectionTagsJSON.png)
+![](images/CustomVisionMaskDetectionTagsJSON.png)
 
 According to response tags, the object is defined as "mask" or "noMask" and mark in green or red square.
 
@@ -72,13 +72,13 @@ In Object Detection version each image from camera is sent to Custom Vision. The
 
 The response is also filtering out above the threshold.
 
-![](src/main/resources/images/CustomVisionMaskDetectionJSON.png)
+![](images/CustomVisionMaskDetectionJSON.png)
 
 Rectangle method provides draw rectangle around a face based on location points from JSON response. 
 
-![](src/main/resources/images/rectanglemethod.png)
+![](images/rectanglemethod.png)
 
-![](src/main/resources/images/rectangle.png)
+![](images/rectangle.png)
 
 To recap, in Object Detection model type the entire image from camera snapshot is processed and Custom Vision algorithm is responsible for detection object as face with or without a mask.
 If in the image we can see more than faces, still only one HTTP request is send to the service and in response we get a few detected object. So, it's more optimal in comparison to Classification model type where each face object is sent singly.
