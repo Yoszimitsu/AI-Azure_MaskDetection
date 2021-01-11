@@ -1,5 +1,8 @@
 package dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -8,6 +11,9 @@ import org.opencv.core.MatOfRect;
 
 import java.util.ArrayList;
 
+@AllArgsConstructor
+@Data
+@Builder
 public class MaskDetectionRequestDto {
 
     private HttpClient httpclient;
@@ -22,37 +28,4 @@ public class MaskDetectionRequestDto {
         this.facesDetected = new MatOfRect();
         this.httpEntities = new ArrayList<>();
     }
-
-    public HttpClient getHttpclient() {
-        return httpclient;
-    }
-
-    public void setHttpclient(HttpClient httpclient) {
-        this.httpclient = httpclient;
-    }
-
-    public Mat getMat() {
-        return mat;
-    }
-
-    public void setMat(Mat mat) {
-        this.mat = mat;
-    }
-
-    public MatOfRect getFacesDetected() {
-        return facesDetected;
-    }
-
-    public void setFacesDetected(MatOfRect facesDetected) {
-        this.facesDetected = facesDetected;
-    }
-
-    public ArrayList<HttpEntity> getHttpEntities() {
-        return httpEntities;
-    }
-
-    public void setHttpEntities(ArrayList<HttpEntity> httpEntities) {
-        this.httpEntities = httpEntities;
-    }
-
 }
